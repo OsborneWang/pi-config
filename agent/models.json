@@ -1,0 +1,198 @@
+{
+  "providers": {
+    "nt": {
+      "baseUrl": "https://token.nodal.wang/v1",
+      "api": "openai-responses",
+      "apiKey": "${PI_MODEL_API_KEY_NT}",
+      "headers": {
+        "User-Agent": "MyCustomClient/1.0"
+      },
+      "models": [
+        {
+          "id": "gpt-5.6-sol",
+          "name": "gpt-5.6-sol",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-6.1-sol",
+          "name": "gpt-6.1-sol",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-5.6-luna",
+          "name": "gpt-5.6-luna",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-5.5",
+          "name": "gpt-5.5",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        }
+      ]
+    },
+    "zly": {
+      "baseUrl": "https://selfos.dpdns.org",
+      "api": "openai-responses",
+      "apiKey": "${PI_MODEL_API_KEY_ZLY}",
+      "headers": {
+        "User-Agent": "MyCustomClient/1.0"
+      },
+      "models": [
+        {
+          "id": "gpt-5.6-sol",
+          "name": "gpt-5.6-sol",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-5.6-terra",
+          "name": "gpt-5.6-terra",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-5.6-luna",
+          "name": "gpt-5.6-luna",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-6-astra",
+          "name": "gpt-6-astra",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "gpt-6.1-sol",
+          "name": "gpt-6.1-sol",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        }
+      ]
+    },
+    "WorkBuddy-self": {
+      "baseUrl": "https://selfos.dpdns.org/v1",
+      "api": "openai-completions",
+      "apiKey": "${PI_MODEL_API_KEY_WORKBUDDY_SELF}",
+      "headers": {
+        "User-Agent": "MyCustomClient/1.0"
+      },
+      "models": [
+        {
+          "id": "cn:deepseek-v4.1-flash",
+          "name": "Deepseek-V4.1-Flash",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "cn:glm-5.3-flash",
+          "name": "GLM-5.3-Flash",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "cn:glm-5.3",
+          "name": "GLM-5.3",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        },
+        {
+          "id": "cn:kimi-k3-1",
+          "name": "KIMI-K3",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        }
+      ]
+    },
+    "stepFun": {
+      "baseUrl": "https://api.stepfun.com/step_plan/v1",
+      "api": "openai-completions",
+      "apiKey": "${PI_MODEL_API_KEY_STEPFUN}",
+      "headers": {
+        "User-Agent": "MyCustomClient/1.0"
+      },
+      "models": [
+        {
+          "id": "step-5-preview",
+          "name": "step-5-preview",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 1000000,
+          "maxTokens": 128000
+        }
+      ]
+    }
+  }
+}

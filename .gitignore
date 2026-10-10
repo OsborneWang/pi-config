@@ -1,0 +1,15 @@
+# Secrets and runtime state must stay local.
+agent/auth.json
+agent/mcp-auth.json
+agent/sessions/
+agent/trust.json
+agent/crashes.json
+agent/models-store.json
+agent/*.bak-*
+agent/npm/
+agent/bin/
+
+# Local editor and OS noise.
+.DS_Store
+*.log
+node_modules/

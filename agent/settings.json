@@ -1,0 +1,12 @@
+{
+  "theme": "dark",
+  "hideThinkingBlock": false,
+  "defaultThinkingLevel": "high",
+  "packages": [
+    "npm:pi-btw",
+    "npm:pi-tool-display",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:@juicesharp/rpiv-i18n",
+    "npm:pi-sidebar-tui"
+  ]
+}
