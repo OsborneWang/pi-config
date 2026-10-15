@@ -6,6 +6,7 @@ agent/trust.json
 agent/crashes.json
 agent/models-store.json
 agent/*.bak-*
+agent/backups/
 agent/npm/
 agent/bin/
 

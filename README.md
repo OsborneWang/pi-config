@@ -5,6 +5,7 @@
 仓库包含：
 
 - 用户级 `settings.json`、快捷键和 sidebar 配置
+- powerline footer 的显示配置（`settings.json` 的 `powerline` 键）
 - `pi-sidebar-tui` 响应式宽度补丁（侧栏随窗格缩放、过窄自动隐藏）
 - 自定义模型 provider 配置，真实 API Key 已改为环境变量引用
 - 本地 extensions 和 prompt templates
@@ -89,6 +90,7 @@ patch -p1 -R -d "$EXT" < agent/patches/pi-sidebar-tui-responsive-width.patch # �
 - `trust.json`
 - `crashes.json`
 - `models-store.json`
+- `backups/`
 - `npm/`
 - `bin/`
 
