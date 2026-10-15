@@ -5,6 +5,7 @@
 仓库包含：
 
 - 用户级 `settings.json`、快捷键和 sidebar 配置
+- `pi-sidebar-tui` 响应式宽度补丁（侧栏随窗格缩放、过窄自动隐藏）
 - 自定义模型 provider 配置，真实 API Key 已改为环境变量引用
 - 本地 extensions 和 prompt templates
 - `settings.json` 中声明的 Pi packages
@@ -41,6 +42,40 @@ export PI_MODEL_API_KEY_STEPFUN="..."
 ```
 
 建议把这些值放在本机私有 shell 配置、密码管理器或系统密钥管理工具中，不要提交到这个仓库。
+
+## 响应式 sidebar（本地补丁）
+
+`agent/sidebar-tui.json` 使用了上游 `pi-sidebar-tui` 1.7.8 还不支持的字段：
+
+| 字段 | 含义 | 当前值 |
+| --- | --- | --- |
+| `autoWidth` | 侧栏宽度随终端宽度缩放，过窄时自动隐藏 | `true` |
+| `widthRatio` | 目标宽度占终端列数的比例（0.15–0.5） | `0.35` |
+| `hideBelow` | 终端窄于此列数时完全隐藏侧栏（40–200） | `70` |
+| `minMainWidth` | 主区域至少保留的列数（20–200） | `45` |
+| `width` | 自动模式下的宽度上限；手动模式下的固定宽度 | `45` |
+
+要让这些字段生效，需要把 `agent/patches/pi-sidebar-tui-responsive-width.patch` 应用到已安装的扩展上。`bootstrap.sh` 会在 `pi update --extensions` 之后自动尝试应用；如果上游版本变化导致失败，只打印警告并回退到固定宽度。
+
+手动应用或回滚：
+
+```bash
+EXT="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/npm/node_modules/pi-sidebar-tui"
+patch -p1 -d "$EXT" < agent/patches/pi-sidebar-tui-responsive-width.patch   # 应用
+patch -p1 -R -d "$EXT" < agent/patches/pi-sidebar-tui-responsive-width.patch # 回滚
+```
+
+已运行的会话里可以用命令即时调整（会写回 `sidebar-tui.json`）：
+
+```
+/sidebar-tui auto on|off      # 开关自动宽度
+/sidebar-tui ratio <0.15-0.5> # 宽度比例
+/sidebar-tui hidebelow <40-200>
+/sidebar-tui minmain <20-200>
+/sidebar-tui width <10-120>   # 自动模式下是上限
+```
+
+参考宽度曲线（`ratio=0.35`、`minMainWidth=45`、`hideBelow=70`）：终端 200/120/90/81/70 列时，侧栏分别为 45/42/31/28/25 列，69 列及以下隐藏。
 
 ## 更新本仓库
 

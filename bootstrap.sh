@@ -46,6 +46,23 @@ install_dir prompts
 
 pi update --extensions
 
+# Local patch for pi-sidebar-tui (responsive width + auto-hide). Upstream 1.7.8
+# ignores the autoWidth/widthRatio/hideBelow/minMainWidth keys, so apply the
+# patch on top of the installed extension. Non-fatal: a package update can
+# invalidate it, and the sidebar then just falls back to a fixed width.
+PATCH_FILE="$SOURCE_DIR/patches/pi-sidebar-tui-responsive-width.patch"
+EXT_DIR="$AGENT_DIR/npm/node_modules/pi-sidebar-tui"
+if [ -f "$PATCH_FILE" ] && [ -d "$EXT_DIR" ]; then
+  if patch -p1 -N --no-backup-if-mismatch -d "$EXT_DIR" --dry-run < "$PATCH_FILE" >/dev/null 2>&1; then
+    patch -p1 -N --no-backup-if-mismatch -d "$EXT_DIR" < "$PATCH_FILE" >/dev/null
+    echo "Applied patch: pi-sidebar-tui-responsive-width.patch"
+  elif patch -p1 -R -d "$EXT_DIR" --dry-run < "$PATCH_FILE" >/dev/null 2>&1; then
+    echo "Patch already applied: pi-sidebar-tui-responsive-width.patch"
+  else
+    echo "WARNING: could not apply pi-sidebar-tui patch (installed version changed?)" >&2
+  fi
+fi
+
 cat <<EOF
 Pi config installed to: $AGENT_DIR
 Backup directory: $BACKUP_DIR

@@ -1,0 +1,360 @@
+--- a/compositor.ts
++++ b/compositor.ts
+@@ -2,6 +2,19 @@
+ import type { SidebarContext } from "./types.ts";
+ import { renderSidebar, type PanelSlot } from "./sidebar.ts";
+ import { dim } from "./colors.ts";
++import { MIN_SIDEBAR_WIDTH } from "./config.ts";
++
++/** Runtime layout knobs for the responsive sidebar. */
++export interface SidebarLayoutOptions {
++  /** Scale with terminal width and hide when too narrow. */
++  autoWidth: boolean;
++  /** Target fraction of terminal columns (auto mode). */
++  widthRatio: number;
++  /** Hide entirely below this terminal width. */
++  hideBelow: number;
++  /** Keep pi's main area at least this wide. */
++  minMainWidth: number;
++}
+ 
+ // No background by default so terminal transparency shows through.
+ // Set PI_SIDEBAR_BG="#rrggbb" to paint an opaque panel (hides scroll flash).
+@@ -40,6 +53,7 @@
+   private disposed = false;
+ 
+   private readonly sidebarWidth: number;
++  private readonly getLayout: (() => SidebarLayoutOptions) | null;
+ 
+   // Last painted sidebar content, used to repaint only rows that actually
+   // changed. Prevents full-panel rewrites every frame (the flicker source).
+@@ -59,12 +73,34 @@
+   private focusedPanel: string | null = null;
+   private originalRouteWheel: ((event: any, delta: number) => void) | null = null;
+ 
+-  constructor(tui: any, getCtx: () => SidebarContext, sidebarWidth = 40) {
++  constructor(
++    tui: any,
++    getCtx: () => SidebarContext,
++    sidebarWidth = 40,
++    getLayout?: () => SidebarLayoutOptions,
++  ) {
+     this.tui = tui;
+     this.terminal = tui.terminal;
+     this.getCtx = getCtx;
+     this.originalWrite = this.terminal.write.bind(this.terminal);
+     this.sidebarWidth = sidebarWidth;
++    this.getLayout = getLayout ?? null;
++  }
++
++  /**
++   * Sidebar width for the given terminal width. Returns 0 when the sidebar
++   * should be hidden. In manual mode (no layout provider, or autoWidth off)
++   * the configured width is used verbatim, preserving the old behaviour.
++   */
++  resolveWidth(rawCols: number): number {
++    const layout = this.getLayout?.();
++    if (!layout || !layout.autoWidth) return this.sidebarWidth;
++    if (!Number.isFinite(rawCols) || rawCols < layout.hideBelow) return 0;
++    const desired = Math.round(rawCols * layout.widthRatio);
++    const maxByMain = rawCols - layout.minMainWidth;
++    const upper = Math.min(this.sidebarWidth, maxByMain);
++    if (upper < MIN_SIDEBAR_WIDTH) return 0;
++    return Math.max(MIN_SIDEBAR_WIDTH, Math.min(desired, upper));
+   }
+ 
+   install(): void {
+@@ -81,7 +117,11 @@
+       get() {
+         const d = origDesc;
+         const raw = d?.get ? (d.get.call(terminal) ?? 80) : (typeof d?.value === "number" ? d.value : 80);
+-        return Math.max(1, raw - self.sidebarWidth - 1);
++        const rawCols = Math.max(1, Math.floor(raw));
++        const sw = self.resolveWidth(rawCols);
++        // Hidden: hand the whole width back to pi.
++        if (sw <= 0) return rawCols;
++        return Math.max(1, rawCols - sw - 1);
+       },
+     });
+ 
+@@ -228,7 +268,11 @@
+   // Column where the sidebar's left border sits (1-based). Input routing uses
+   // it to decide whether the mouse is over the sidebar.
+   getSeparatorColumn(): number {
+-    return this.rawColumns() - this.sidebarWidth;
++    const rawCols = this.rawColumns();
++    const sw = this.resolveWidth(rawCols);
++    // Hidden: report a column past the edge so no mouse input is "over the sidebar".
++    if (sw <= 0) return rawCols + 1;
++    return rawCols - sw;
+   }
+ 
+   getFocusedPanel(): string | null {
+@@ -262,7 +306,10 @@
+   // erase so the sidebar columns are never cleared.
+   private mainWidth(): number {
+     const rawCols = this.rawColumns();
+-    return Math.max(1, rawCols - this.sidebarWidth - 1);
++    const sw = this.resolveWidth(rawCols);
++    // Hidden: full width, so pi's line erases clear any leftover sidebar cells.
++    if (sw <= 0) return rawCols;
++    return Math.max(1, rawCols - sw - 1);
+   }
+ 
+   private formatLine(line: string | undefined, width: number): string {
+@@ -276,7 +323,13 @@
+ 
+     const rawRows = this.terminal.rows;
+     const rawCols = this.rawColumns();
+-    const sw = this.sidebarWidth;
++    const sw = this.resolveWidth(rawCols);
++    if (sw <= 0) {
++      // Sidebar hidden at this terminal width: paint nothing and force a full
++      // repaint next time it becomes visible again.
++      this.cacheValid = false;
++      return;
++    }
+     const sepCol = rawCols - sw;
+     const sidebarCol = sepCol + 1;
+ 
+--- a/config.ts
++++ b/config.ts
+@@ -16,16 +16,40 @@
+ 
+ export interface SidebarSettings {
+   enabled: boolean;
++  /** Exact sidebar width in manual mode; upper cap in auto mode. */
+   width: number;
+   /** Max todos shown in the Todos panel before it caps to the last N (+ a "+N more" footer). */
+   todosMax: number;
+   /** Number of lines to scroll per up/down nudge (default: 3). A page is 3x this. */
+   scrollSpeed: number;
+-}
+-
+-export const DEFAULT_SIDEBAR_SETTINGS: SidebarSettings = { enabled: true, width: 45, todosMax: 7, scrollSpeed: 3 };
++  /** Scale the sidebar with the terminal width and hide it when too narrow. */
++  autoWidth: boolean;
++  /** Fraction of terminal columns the sidebar targets in auto mode (0.15-0.5). */
++  widthRatio: number;
++  /** Hide the sidebar entirely when the terminal is narrower than this. */
++  hideBelow: number;
++  /** Never let the sidebar squeeze pi's main area below this many columns. */
++  minMainWidth: number;
++}
++
++export const DEFAULT_SIDEBAR_SETTINGS: SidebarSettings = {
++  enabled: true,
++  width: 45,
++  todosMax: 7,
++  scrollSpeed: 3,
++  autoWidth: true,
++  widthRatio: 0.3,
++  hideBelow: 90,
++  minMainWidth: 60,
++};
+ export const MIN_SIDEBAR_WIDTH = 10;
+ export const MAX_SIDEBAR_WIDTH = 120;
++export const MIN_WIDTH_RATIO = 0.15;
++export const MAX_WIDTH_RATIO = 0.5;
++export const MIN_HIDE_BELOW = 40;
++export const MAX_HIDE_BELOW = 200;
++export const MIN_MIN_MAIN_WIDTH = 20;
++export const MAX_MIN_MAIN_WIDTH = 200;
+ export const MIN_TODOS_MAX = 1;
+ export const MAX_TODOS_MAX = 100;
+ export const MIN_SCROLL_SPEED = 1;
+@@ -138,6 +162,22 @@
+     if (typeof ss === "number" && Number.isInteger(ss) && ss >= MIN_SCROLL_SPEED && ss <= MAX_SCROLL_SPEED) {
+       settings.scrollSpeed = ss;
+     }
++    const aw = obj["autoWidth"];
++    if (typeof aw === "boolean") {
++      settings.autoWidth = aw;
++    }
++    const wr = obj["widthRatio"];
++    if (typeof wr === "number" && Number.isFinite(wr) && wr >= MIN_WIDTH_RATIO && wr <= MAX_WIDTH_RATIO) {
++      settings.widthRatio = wr;
++    }
++    const hb = obj["hideBelow"];
++    if (typeof hb === "number" && Number.isInteger(hb) && hb >= MIN_HIDE_BELOW && hb <= MAX_HIDE_BELOW) {
++      settings.hideBelow = hb;
++    }
++    const mm = obj["minMainWidth"];
++    if (typeof mm === "number" && Number.isInteger(mm) && mm >= MIN_MIN_MAIN_WIDTH && mm <= MAX_MIN_MAIN_WIDTH) {
++      settings.minMainWidth = mm;
++    }
+   }
+   // Env override wins over both the file value and the default.
+   const envSpeed = process.env["PI_SIDEBAR_SCROLL_SPEED"] ? parseInt(process.env["PI_SIDEBAR_SCROLL_SPEED"], 10) : NaN;
+--- a/index.ts
++++ b/index.ts
+@@ -1,9 +1,9 @@
+ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+-import { loadSidebarSettings, getAutoCompactEnabled, saveSidebarSettings, MIN_TODOS_MAX, MAX_TODOS_MAX, MIN_SCROLL_SPEED, MAX_SCROLL_SPEED } from "./config.ts";
++import { loadSidebarSettings, getAutoCompactEnabled, saveSidebarSettings, MIN_TODOS_MAX, MAX_TODOS_MAX, MIN_SCROLL_SPEED, MAX_SCROLL_SPEED, MIN_WIDTH_RATIO, MAX_WIDTH_RATIO, MIN_HIDE_BELOW, MAX_HIDE_BELOW, MIN_MIN_MAIN_WIDTH, MAX_MIN_MAIN_WIDTH } from "./config.ts";
+ import type { TodoItem, SidebarContext, CtxSample } from "./types.ts";
+ import { parseTodos, reconstructTodosFromBranch } from "./parse-todos.ts";
+ import { getWorkspaceData, invalidateWorkspaceCache } from "./workspace.ts";
+-import { SidebarCompositor } from "./compositor.ts";
++import { SidebarCompositor, type SidebarLayoutOptions } from "./compositor.ts";
+ import { getMcpServers, invalidateMcpCache, type LiveMcpTool } from "./mcp.ts";
+ import { loadCavemanConfig, resolveCavemanLevel, cavemanInterval, type CavemanConfig } from "./caveman.ts";
+ import { setPiTheme } from "./colors.ts";
+@@ -16,6 +16,22 @@
+ let sidebarWidth = initialSettings.width;
+ let todosMax = initialSettings.todosMax;
+ let scrollSpeed = initialSettings.scrollSpeed;
++let autoWidth = initialSettings.autoWidth;
++let widthRatio = initialSettings.widthRatio;
++let hideBelow = initialSettings.hideBelow;
++let minMainWidth = initialSettings.minMainWidth;
++
++function currentSettings() {
++  return { enabled: sidebarEnabled, width: sidebarWidth, todosMax, scrollSpeed, autoWidth, widthRatio, hideBelow, minMainWidth };
++}
++
++function persistSettings(): void {
++  saveSidebarSettings(currentSettings());
++}
++
++function currentLayout(): SidebarLayoutOptions {
++  return { autoWidth, widthRatio, hideBelow, minMainWidth };
++}
+ let sessionManager: any = null;
+ let sessionTitle: string | null = null;
+ let todos: TodoItem[] = [];
+@@ -240,13 +256,13 @@
+ 
+   const setSidebarEnabled = (enabled: boolean, ctx: any) => {
+     sidebarEnabled = enabled;
+-    saveSidebarSettings({ enabled: sidebarEnabled, width: sidebarWidth, todosMax, scrollSpeed });
++    persistSettings();
+ 
+     if (!sidebarEnabled) {
+       compositorRef?.dispose();
+       compositorRef = null;
+     } else if (tuiRef && !compositorRef) {
+-      const comp = new SidebarCompositor(tuiRef, () => buildSidebarContext(currentCwd), sidebarWidth);
++      const comp = new SidebarCompositor(tuiRef, () => buildSidebarContext(currentCwd), sidebarWidth, currentLayout);
+       comp.install();
+       compositorRef = comp;
+       requestRender?.();
+@@ -344,6 +360,7 @@
+           tui,
+           () => buildSidebarContext(currentCwd),
+           sidebarWidth,
++          currentLayout,
+         );
+         comp.install();
+         compositorRef = comp;
+@@ -566,7 +583,7 @@
+   });
+ 
+   pi.registerCommand("sidebar-tui", {
+-    description: "Control sidebar: /sidebar-tui on | off | width <N> | todos <N>",
++    description: "Control sidebar: /sidebar-tui on | off | width <N> | auto <on|off> | ratio <N> | hidebelow <N> | minmain <N> | todos <N>",
+     handler: async (args, ctx) => {
+       currentCwd = (ctx as any).cwd;
+       const parts = (args?.trim() ?? "").split(/\s+/);
+@@ -579,11 +596,11 @@
+           return;
+         }
+         sidebarWidth = n;
+-        saveSidebarSettings({ enabled: sidebarEnabled, width: sidebarWidth, todosMax, scrollSpeed });
++        persistSettings();
+         if (compositorRef && tuiRef) {
+           compositorRef.dispose();
+           compositorRef = null;
+-          const comp = new SidebarCompositor(tuiRef, () => buildSidebarContext(currentCwd), sidebarWidth);
++          const comp = new SidebarCompositor(tuiRef, () => buildSidebarContext(currentCwd), sidebarWidth, currentLayout);
+           comp.install();
+           compositorRef = comp;
+           requestRender?.();
+@@ -592,6 +609,61 @@
+         return;
+       }
+ 
++      if (cmd === "auto") {
++        const v = (parts[1] ?? "").toLowerCase();
++        if (v !== "on" && v !== "off") {
++          (ctx as any).ui?.notify?.("Usage: /sidebar-tui auto <on|off>", "warning");
++          return;
++        }
++        autoWidth = v === "on";
++        persistSettings();
++        requestRender?.();
++        (ctx as any).ui?.notify?.(`Sidebar auto width ${autoWidth ? "enabled" : "disabled"}`, "info");
++        return;
++      }
++
++      if (cmd === "ratio") {
++        const n = Number.parseFloat(parts[1] ?? "");
++        if (!Number.isFinite(n) || n < MIN_WIDTH_RATIO || n > MAX_WIDTH_RATIO) {
++          (ctx as any).ui?.notify?.(`Usage: /sidebar-tui ratio <${MIN_WIDTH_RATIO}-${MAX_WIDTH_RATIO}>`, "warning");
++          return;
++        }
++        widthRatio = n;
++        autoWidth = true;
++        persistSettings();
++        requestRender?.();
++        (ctx as any).ui?.notify?.(`Sidebar width ratio set to ${n}`, "info");
++        return;
++      }
++
++      if (cmd === "hidebelow") {
++        const n = parseInt(parts[1] ?? "", 10);
++        if (isNaN(n) || n < MIN_HIDE_BELOW || n > MAX_HIDE_BELOW) {
++          (ctx as any).ui?.notify?.(`Usage: /sidebar-tui hidebelow <${MIN_HIDE_BELOW}-${MAX_HIDE_BELOW}>`, "warning");
++          return;
++        }
++        hideBelow = n;
++        autoWidth = true;
++        persistSettings();
++        requestRender?.();
++        (ctx as any).ui?.notify?.(`Sidebar hides below ${n} columns`, "info");
++        return;
++      }
++
++      if (cmd === "minmain") {
++        const n = parseInt(parts[1] ?? "", 10);
++        if (isNaN(n) || n < MIN_MIN_MAIN_WIDTH || n > MAX_MIN_MAIN_WIDTH) {
++          (ctx as any).ui?.notify?.(`Usage: /sidebar-tui minmain <${MIN_MIN_MAIN_WIDTH}-${MAX_MIN_MAIN_WIDTH}>`, "warning");
++          return;
++        }
++        minMainWidth = n;
++        autoWidth = true;
++        persistSettings();
++        requestRender?.();
++        (ctx as any).ui?.notify?.(`Sidebar keeps main area >= ${n} columns`, "info");
++        return;
++      }
++
+       if (cmd === "todos") {
+         const n = parseInt(parts[1] ?? "", 10);
+         if (isNaN(n) || n < MIN_TODOS_MAX || n > MAX_TODOS_MAX) {
+@@ -599,7 +671,7 @@
+           return;
+         }
+         todosMax = n;
+-        saveSidebarSettings({ enabled: sidebarEnabled, width: sidebarWidth, todosMax, scrollSpeed });
++        persistSettings();
+         requestRender?.();
+         (ctx as any).ui?.notify?.(`Todos max set to ${n}`, "info");
+         return;
+@@ -612,14 +684,14 @@
+           return;
+         }
+         scrollSpeed = n;
+-        saveSidebarSettings({ enabled: sidebarEnabled, width: sidebarWidth, todosMax, scrollSpeed });
++        persistSettings();
+         requestRender?.();
+         (ctx as any).ui?.notify?.(`Scroll speed set to ${n} lines`, "info");
+         return;
+       }
+ 
+       if (cmd !== "on" && cmd !== "off") {
+-        (ctx as any).ui?.notify?.("Usage: /sidebar-tui on | off | width <N> | todos <N> | scroll <N>", "warning");
++        (ctx as any).ui?.notify?.("Usage: /sidebar-tui on | off | width <N> | auto <on|off> | ratio <N> | hidebelow <N> | minmain <N> | todos <N> | scroll <N>", "warning");
+         return;
+       }
+ 

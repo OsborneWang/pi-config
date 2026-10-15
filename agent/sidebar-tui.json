@@ -1,5 +1,10 @@
 {
   "enabled": true,
   "width": 45,
-  "todosMax": 10
+  "todosMax": 10,
+  "scrollSpeed": 3,
+  "autoWidth": true,
+  "widthRatio": 0.35,
+  "hideBelow": 70,
+  "minMainWidth": 45
 }
