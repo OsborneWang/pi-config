@@ -7,6 +7,16 @@
     "npm:pi-tool-display",
     "npm:@juicesharp/rpiv-todo",
     "npm:@juicesharp/rpiv-i18n",
-    "npm:pi-sidebar-tui"
-  ]
+    "npm:pi-sidebar-tui",
+    "npm:pi-teammate",
+    "npm:pi-powerline-footer"
+  ],
+  "defaultProvider": "nt",
+  "defaultModel": "gpt-6.1-sol",
+  "powerline": {
+    "preset": "default",
+    "path": {
+      "mode": "full"
+    }
+  }
 }
