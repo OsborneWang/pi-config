@@ -29,7 +29,15 @@ cd pi-config
 ./bootstrap.sh
 ```
 
-脚本会写入 `${PI_CODING_AGENT_DIR:-~/.pi/agent}`。如果目标位置已有同名配置文件或目录，脚本会先备份到 `~/.pi/agent/backups/` 下，再替换受管配置。
+脚本会写入 `${PI_CODING_AGENT_DIR:-~/.pi/agent}`。如果目标位置已有同名配置文件或目录，脚本会先备份到 `~/.pi/agent/backups/` 下，再替换受管配置。更新 `extensions` 时只替换仓库中同名的文件或子目录，保留 Herdr 等额外安装的集成；`prompts` 目录仍整体替换。
+
+## Herdr 状态集成
+
+Herdr 集成属于机器本地配置，不随仓库分发。在运行 Pi 的机器上执行 `herdr integration install pi` 安装；本机和 SSH 远程机器需要分别安装。
+
+Herdr 0.9.1 自带的 Pi v9 集成存在首次通过 `/reload` 接入时的兼容问题：扩展发送 `session_start_source: "reload"`，但服务端不接受该来源。现用扩展已将 reload 登记映射为 `resume`，保持原会话身份。重新安装 Herdr 集成会覆盖此本地修补，需要重新检查这处兼容处理。
+
+修改扩展后，在对应 Pi 会话执行 `/reload`。Herdr 无需重启。可用 `herdr agent explain <pane-id> --json` 检查：成功接管后应显示 `screen_detection_skipped: true`，且原因是 `full_lifecycle_hook_authority`。
 
 ## API Key 环境变量
 

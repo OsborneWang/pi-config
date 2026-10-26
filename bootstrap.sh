@@ -35,13 +35,28 @@ install_dir() {
   cp -R "$SOURCE_DIR/$path" "$AGENT_DIR/$path"
 }
 
+install_extensions() {
+  backup_path extensions
+  mkdir -p "$AGENT_DIR/extensions"
+
+  # Replace only entries owned by this repository. Herdr and other locally
+  # installed integrations must survive a config update.
+  local source_path entry
+  for source_path in "$SOURCE_DIR/extensions/"*; do
+    [ -e "$source_path" ] || continue
+    entry="${source_path##*/}"
+    rm -rf "$AGENT_DIR/extensions/$entry"
+    cp -R "$source_path" "$AGENT_DIR/extensions/$entry"
+  done
+}
+
 mkdir -p "$AGENT_DIR"
 
 install_file settings.json
 install_file keybindings.json
 install_file models.json
 install_file sidebar-tui.json
-install_dir extensions
+install_extensions
 install_dir prompts
 
 pi update --extensions
