@@ -11,8 +11,8 @@
     "npm:pi-teammate",
     "npm:pi-powerline-footer"
   ],
-  "defaultProvider": "nt",
-  "defaultModel": "gpt-6.1-sol",
+  "defaultProvider": "WorkBuddy-self",
+  "defaultModel": "cn:deepseek-v4.1-flash",
   "powerline": {
     "preset": "default",
     "path": {
