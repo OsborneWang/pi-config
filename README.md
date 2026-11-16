@@ -10,7 +10,7 @@
 - powerline footer 的显示配置（`settings.json` 的 `powerline` 键）
 - `pi-sidebar-tui` 响应式宽度补丁（侧栏随窗格缩放、过窄自动隐藏）
 - 自定义模型 provider 配置，真实 API Key 已改为环境变量引用
-- 本地 extensions（含 `/handoff`）和 prompt templates
+- 本地 extensions（含 `/handoff`、官方 `todo`）和 prompt templates
 - `settings.json` 中声明的 Pi packages（固定版本，保证 sidebar 补丁可应用）
 
 仓库不会保存登录状态、OAuth token、会话历史、信任状态、日志、缓存或已安装的 `node_modules`。
