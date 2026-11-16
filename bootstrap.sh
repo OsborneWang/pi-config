@@ -39,8 +39,8 @@ install_extensions() {
   backup_path extensions
   mkdir -p "$AGENT_DIR/extensions"
 
-  # Replace only entries owned by this repository. Herdr and other locally
-  # installed integrations must survive a config update.
+  # Replace only entries owned by this repository. Locally installed
+  # integrations must survive a config update.
   local source_path entry
   for source_path in "$SOURCE_DIR/extensions/"*; do
     [ -e "$source_path" ] || continue
@@ -50,13 +50,32 @@ install_extensions() {
   done
 }
 
+install_themes() {
+  backup_path themes
+  rm -rf "$AGENT_DIR/themes"
+  mkdir -p "$AGENT_DIR/themes"
+
+  # Copy only active themes; skip editor backups such as *.bak-*.
+  local source_path entry
+  for source_path in "$SOURCE_DIR/themes/"*.json; do
+    [ -e "$source_path" ] || continue
+    entry="${source_path##*/}"
+    case "$entry" in
+      *.bak-*) continue ;;
+    esac
+    cp "$source_path" "$AGENT_DIR/themes/$entry"
+  done
+}
+
 mkdir -p "$AGENT_DIR"
 
 install_file settings.json
 install_file keybindings.json
 install_file models.json
 install_file sidebar-tui.json
+install_file AGENTS.md
 install_extensions
+install_themes
 install_dir prompts
 
 pi update --extensions
