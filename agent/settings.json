@@ -1,15 +1,15 @@
 {
-  "theme": "dark",
+  "theme": "tokyonight",
   "hideThinkingBlock": false,
   "defaultThinkingLevel": "high",
   "packages": [
-    "npm:pi-btw",
-    "npm:pi-tool-display",
-    "npm:@juicesharp/rpiv-todo",
-    "npm:@juicesharp/rpiv-i18n",
-    "npm:pi-sidebar-tui",
-    "npm:pi-teammate",
-    "npm:pi-powerline-footer"
+    "npm:pi-btw@0.8.0",
+    "npm:pi-tool-display@0.5.0",
+    "npm:@juicesharp/rpiv-todo@2.13.9",
+    "npm:@juicesharp/rpiv-i18n@2.13.9",
+    "npm:pi-sidebar-tui@1.7.8",
+    "npm:pi-teammate@0.5.0",
+    "npm:pi-powerline-footer@0.20.2"
   ],
   "defaultProvider": "WorkBuddy-self",
   "defaultModel": "cn:deepseek-v4.1-flash",
