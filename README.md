@@ -5,11 +5,13 @@
 仓库包含：
 
 - 用户级 `settings.json`、快捷键和 sidebar 配置
+- 全局 `AGENTS.md`（文件引用必须给出完整绝对路径等行为规范）
+- 主题目录 `themes/` 和当前默认主题 `tokyonight`
 - powerline footer 的显示配置（`settings.json` 的 `powerline` 键）
 - `pi-sidebar-tui` 响应式宽度补丁（侧栏随窗格缩放、过窄自动隐藏）
 - 自定义模型 provider 配置，真实 API Key 已改为环境变量引用
-- 本地 extensions 和 prompt templates
-- `settings.json` 中声明的 Pi packages
+- 本地 extensions（含 `/handoff`）和 prompt templates
+- `settings.json` 中声明的 Pi packages（固定版本，保证 sidebar 补丁可应用）
 
 仓库不会保存登录状态、OAuth token、会话历史、信任状态、日志、缓存或已安装的 `node_modules`。
 
@@ -29,15 +31,21 @@ cd pi-config
 ./bootstrap.sh
 ```
 
-脚本会写入 `${PI_CODING_AGENT_DIR:-~/.pi/agent}`。如果目标位置已有同名配置文件或目录，脚本会先备份到 `~/.pi/agent/backups/` 下，再替换受管配置。更新 `extensions` 时只替换仓库中同名的文件或子目录，保留 Herdr 等额外安装的集成；`prompts` 目录仍整体替换。
+脚本会写入 `${PI_CODING_AGENT_DIR:-~/.pi/agent}`。如果目标位置已有同名配置文件或目录，脚本会先备份到 `~/.pi/agent/backups/` 下，再替换受管配置。更新 `extensions` 时只替换仓库中同名的文件或子目录，保留本机额外安装的集成；`prompts` 目录仍整体替换。
 
-## Herdr 状态集成
+## 可选：journal skill
 
-Herdr 集成属于机器本地配置，不随仓库分发。在运行 Pi 的机器上执行 `herdr integration install pi` 安装；本机和 SSH 远程机器需要分别安装。
+journal skill 的源文件维护在 `journal-config` 仓库，本仓库不重复提交，以免两份配置漂移。在需要使用的机器上手动建立软链：
 
-Herdr 0.9.1 自带的 Pi v9 集成存在首次通过 `/reload` 接入时的兼容问题：扩展发送 `session_start_source: "reload"`，但服务端不接受该来源。现用扩展已将 reload 登记映射为 `resume`，保持原会话身份。重新安装 Herdr 集成会覆盖此本地修补，需要重新检查这处兼容处理。
+```bash
+mkdir -p "${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/skills/journal"
+ln -sfn "$HOME/journal-config/skills/journal/SKILL.md" \
+  "${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}/skills/journal/SKILL.md"
+```
 
-修改扩展后，在对应 Pi 会话执行 `/reload`。Herdr 无需重启。可用 `herdr agent explain <pane-id> --json` 检查：成功接管后应显示 `screen_detection_skipped: true`，且原因是 `full_lifecycle_hook_authority`。
+## 主题
+
+`agent/themes/` 保存自定义主题，`settings.json` 默认使用 `tokyonight`。`bootstrap.sh` 只复制有效的 `*.json`，不会带入本机的 `*.bak-*` 备份文件。
 
 ## API Key 环境变量
 
@@ -98,6 +106,7 @@ patch -p1 -R -d "$EXT" < agent/patches/pi-sidebar-tui-responsive-width.patch # �
 - `trust.json`
 - `crashes.json`
 - `models-store.json`
+- `themes/*.bak-*`
 - `backups/`
 - `npm/`
 - `bin/`
